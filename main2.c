@@ -7,7 +7,7 @@
 
 pairing_t pairing;
 element_t g;
-element_t g1, g2, EK;//G1
+element_t g1, g2, h;//G1
 element_t x1, x2, f1, t;//Zr
 
 element_t ti;//Zr
@@ -20,7 +20,6 @@ element_t tempGT, tempGT2, tempGT3, tempGT4;
 
 element_t C1, C2, C3, C4;//G1
 element_t T1, T2, T3, T4;//G1
-
 
 void print_hex(uint8_t* p, int len)
 {
@@ -88,10 +87,10 @@ void Setup()
     element_pow_zn(g1, g, x1);
     element_pow_zn(g2, g, x2);
 
-    //EK
+    //h
     fx(tempZr, t);
     element_div(tempZr, tempZr, x1);
-    element_pow_zn(EK, g, tempZr);
+    element_pow_zn(h, g, tempZr);
 }
 
 // 1. t/(t-ti) 2. ti/(ti-t)
@@ -110,30 +109,36 @@ void SKeyGen()
     element_pow_zn(Ei, g2, tempZr);
 }
 
-//C1, C2, C3, C4
-void Enc(char w[], int len)
+void xor(uint8_t out[], uint8_t x[], uint8_t y[])
+{
+	int i;
+	for (i=0; i<DEFAULT_BYTES; ++i)
+	{
+		out[i] = x[i] ^ y[i];
+	}
+}
+
+//C1, C2, C3
+void Enc(uint8_t m[], int len)
 {
     uint8_t* buff;
-
     uint8_t L[DEFAULT_BYTES];
+	int n;
+    element_t r;
 
-    element_t r1, r2;
-
-    element_init_Zr(r1, pairing);
-    element_init_Zr(r2, pairing);
-
-    element_random(r1);
-    element_random(r2);
-
-    H(L, w, len);
-    element_from_hash(tempG1, L, DEFAULT_BYTES);
-    element_pow_zn(tempG1, tempG1, r1);
-    element_pow_zn(tempG12, g2, r2);
-    element_mul(C1, tempG12, tempG1);
-    element_pow_zn(C2, g1, r1);
-    element_pow_zn(C3, EK, r2);
-    element_pow_zn(C4, g, r2);
-
+    element_init_Zr(r, pairing);
+    element_random(r);
+	
+    element_pow_zn(tempG1, g2, r);
+	element_pairing(tempG1, g1, tempG1);
+	n = element_length_in_bytes(tempG1);
+	buff = (uint8_t)malloc(n);
+	element_to_bytes(buff, tempG1);
+	H(L, buff, n); 
+	xor(C1, L, m);
+	
+    element_pow_zn(C2, h, r);
+    element_pow_zn(C3, g, r);
     //print_hex(L, sizeof(L));
 }
 
