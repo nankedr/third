@@ -42,10 +42,19 @@ Node Td[MAX_NODE_NUM], Tw[MAX_NODE_NUM];
 int node_num = 1<<(L+1)-1
 
 uint8_t invalid_data[32];
-uint8_t invalid_data_Td = -1;
+int invalid_label_Td = -1;
+
+uint8_t invalid_data_Td[DEFAULT_BYTES];
 
 int LAB = 0;
+int file_id[1<<20];
 
+
+void Geninvalid_data_Td(uint8_t* data)
+{
+	memset(data, 0, 32);
+	memcpy(data, (uint8_t*)&invalid_label_Td, 4);
+}
 void initT(Node T[])
 {
 	int i;
@@ -54,6 +63,30 @@ void initT(Node T[])
 		memset(T[i].C1, 0, sizeof(T[i].C1);
 		element_init_G1(T[i].C2, pairing);
 		element_init_G1(T[i].C3, pairing);
+	}
+}
+void initDataTwTd(char* w[], int len)
+{
+	int i;
+	initT(Tw);
+	initT(Td);
+	
+	for (i=0; i<node_num; i++)
+	{
+		Enc(Td, i, invalid_data_Td);
+		Enc(Tw, i, invalid_data);
+	}
+	
+	uint8_t temp[DEFAULT_BYTES];
+	int buff[DEFAULT_BYTES];
+	
+	for (i=0; i<len; i++)
+	{
+		int n = H2_w_to_set(buff, w[i], strlen(w[i]));
+		int Lw_node_idx = 1<<Lw-1+buff[rand()%n];
+		memset(temp, 0, DEFAULT_BYTES);
+		memcpy(temp, (uint8_t*)w[i], strlen(w));	
+		AccessTw(result, Lw_node_idx, invalid_data, temp) 
 	}
 }
 
@@ -76,6 +109,8 @@ void fx(element_t out, element_t x)
 
 void Setup()
 {
+	Geninvalid_data_Td();
+	
     //参数配置
     char param[1024];
     FILE* f = fopen("a.param", "r");
@@ -272,7 +307,7 @@ int GenLab()
 
 //访问Tw，找到对应关键词/无效数据，并且将其位置重置数据
 //返回路径的序号,即层数
-int AccessTw(uint8_t result[], int l, uint8_t w[], int len, uint8_t new_data[])
+int AccessTw(uint8_t result[], int l, uint8_t w[], uint8_t new_data[])
 {
 	int i;
 	int path[Lw+1];
@@ -285,7 +320,7 @@ int AccessTw(uint8_t result[], int l, uint8_t w[], int len, uint8_t new_data[])
 	for (i=0; i<=Lw; i++)
 	{
 		Dec(data, Tw, path[i])
-		if (match == 1 && memcmp(w, data, len) == 0)
+		if (match == 1 && memcmp(w, data, 16) == 0)
 		{
 			Enc(Tw, path[i], new_data);
 			memcpy(result, data, DEFAULT_BYTES);
@@ -342,6 +377,15 @@ void Td_data(uint8_t data[], int lab_k1, int tag_k2, int lab_k2, int idf)
 	memset(data+16, 0, 16);
 }
 
+//提取Td节点中数据
+void Td_data_field(uint8_t data[], int* lab_k1, int* tag_k2, int* lab_k2, int* idf)
+{
+	*lab_k1 = *((int*)data);
+	*tag_k2 = *((int*)(data+4));
+	*lab_k2 = *((int*)(data+8)); 
+	*idf = *((int*)(data+12));
+}
+
 void Tw_data_field(uint8_t data[], char w[], int* tag0, int* tag_k1, int* lab0, int* lab_k1)
 {
 	memcpy(w, (char*)data, 16);
@@ -363,9 +407,10 @@ void Tw_data(uint8_t data[], char w[], int tag0, int tag_k1, int lab0, int lab_k
 	memcpy(data+28, (uint8_t*)&lab_k1, 4);
 }
 
-void upload(const char w[], int len, int id)
+void Upload(const char w[], int len, int id)
 {
 	int i;
+	uint8_t temp[16];
 	int buff[DEFAULT_BYTES];
 	uint8_t new_data[DEFAULT_BYTES];
 	int n = H2_w_to_set(buff, w, len);
@@ -373,16 +418,16 @@ void upload(const char w[], int len, int id)
 	int base = 1<<Lw-1;
 	
 	uint8_t data[DEFAULT_BYTES];
+	memset(temp, 0, 16);
+	memcpy(temp, (uint8_t*)w, strlen(w));
 	//找到对应关键词节点
 	for (i=0; i<n; i++)
 	{
-		int l = AccessTw(data, base+buff[i], (uint8_t*)w, strlen(w), invalid_data);
+		int l = AccessTw(data, base+buff[i], temp, invalid_data);
 		if (l==-1)
 			continue
 	}
     uint8_t result[DEFAULT_BYTES];
-	//找到节点后，有两种情况，1）该关键词还没有对应文件id；2）追加文件id
-	//1）没有对应文件id
     //w||tag0||tag_k+1||lab0||lab_k+1||ran---->16||4||4||4||4||0
 	int tag0, tag_k1, lab0, lab_k1;
 	Tw_data_field(data, &tag0, &tag_k1, &lab0, &lab_k1);
@@ -397,7 +442,7 @@ void upload(const char w[], int len, int id)
 	int lab_k2 = GenLab();
 	
 	Td_data(new_data, lab_k1, tag_k2, lab_k2, id);
-	AccessTd(new_data, 1<<Ld-1+tag_k1, invalid_data_Td, new_data);
+	AccessTd(new_data, 1<<Ld-1+tag_k1, invalid_label_Td, new_data);
 	
 	uint8_t data_Tw[DEFAULT_BYTES];
 	
@@ -413,26 +458,95 @@ void upload(const char w[], int len, int id)
 }
 
 
-
-int Match()
+int sub_leaf(int tag, int level)
 {
-    element_pairing(tempGT, C1, T1);
-    element_pairing(tempGT2, C2, T2);
-    element_pairing(tempGT3, C3, T3);
-    element_pairing(tempGT4, C4, T4);
+	int path[Ld+1];
+	Path(path, Td, Ld, 1<<Ld-1+tag);
+	int left_node = path[level];
+	int right_node = left_node;
+	
+	while (1)
+	{
+		if (left(left_node) >= 1<<Ld-1)
+			break;
+		left_node = left(left_node);
+		right_node = right(right_node);
+	}
+	return rand()%(right_node-left_node) + (left_node-2<<level-1);
+}
 
-    element_mul(tempGT3, tempGT3, tempGT4);
-    element_mul(tempGT2, tempGT2, tempGT3);
-
-    if (element_cmp(tempGT, tempGT2) == 0)
-    {
-        return 1;
-    }
-    else
-    {
-        return 0;
-    }
-
+int Search(const char w[], int len)
+{
+	int i;
+	int buff[DEFAULT_BYTES];
+	uint8_t new_data[DEFAULT_BYTES];
+	int n = H2_w_to_set(buff, w, len);
+	int base = 1<<Lw-1;
+	
+	uint8_t data[DEFAULT_BYTES];
+	//找到对应关键词节点
+	for (i=0; i<n; i++)
+	{
+		int l = AccessTw(data, base+buff[i], (uint8_t*)w, invalid_data);
+		if (l==-1)
+			continue
+	}
+	int j = 0;
+	
+    uint8_t data_Td[DEFAULT_BYTES];
+    //w||tag0||tag_k+1||lab0||lab_k+1||ran---->16||4||4||4||4||0
+	int tag0, tag_k1, lab0, lab_k1;
+	Tw_data_field(data, &tag0, &tag_k1, &lab0, &lab_k1);
+	int tag0_c, lab0_c, lab_cur=lab0, tag_cur=tag0;
+	int lab_next, tag_next;
+	if (lab0 == lab_k1)
+	{
+		tab_next = tag0;
+		lab_next = lab0;
+	}
+	else
+	{
+		while (lab_cur != lab_k1)
+		{
+			int idf;
+			AccessTd(data_Td, 1<<Ld-1+tag_cur, lab_cur, invalid_data_Td);
+			Td_data_field(data_Td, &lab_cur, &tag_next, &lab_next, &idf); 
+			file_id[j++] = idf;
+			lab_cur = lab_next;
+			tag_cur = tag_next;
+		}
+	}
+	
+	if (j != 0 )
+	{
+		tag_next = tag_k1;
+		lab_next = lab_k1;
+		
+		for (int p=0; p<j; p++)
+		{
+			tag_cur = rand()%(1<<Ld);
+			lab_cur = GenLab();
+			Td_data(data_Td, lab_cur, tag_next, lab_next, file_id[p]);
+			int temp_i = AccessTd(data, 1<<Ld-1+tag_cur, invalid_label_Td, data_Td);
+			
+			lab_next = lab_cur;
+			tag_next = sub_leaf(tag_cur, temp_i);
+		}
+	}
+	
+	uint8_t data_Tw[DEFAULT_BYTES];
+	
+	int new_Lw_idx = base + buff[rand()%n];
+	Tw_data(data_Tw, w, tag_next, tag_k1, lab_next, lab_k1);
+	AccessTw(data, new_Lw_idx, invalid_data, data_Tw);
+	
+	int rannum = 3;
+	for (i=0; i<rannum; i++)
+	{
+		AccessTw(data, base+rand()%(1<<Lw), invalid_data, invalid_data);
+	}
+	
+	return j;
 }
 
 int main()
