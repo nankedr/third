@@ -6,12 +6,16 @@
 #include <openssl/rand.h>
 #include "hash.h"
 
+#define MAX_CHAR 200
 #define MAX_NODE_NUM 1<<20 
 #define Ld 10 //Tree height
 #define Lw 10
 #define parent(x) ((x-1)/2)
 #define left(x) (x*2+1)
 #define right(x) (x*2+2)
+
+char strLine[MAX_CHAR];
+char word_space[5000][20];
 
 //tag 4bytes; lab 4byte; w 20bytes; ran 0bytes;
 pairing_t pairing;
@@ -511,11 +515,14 @@ int Search(const char w[], int len)
 			int idf;
 			AccessTd(data_Td, 1<<Ld-1+tag_cur, lab_cur, invalid_data_Td);
 			Td_data_field(data_Td, &lab_cur, &tag_next, &lab_next, &idf); 
+			printf("%d\n", idf); 
 			file_id[j++] = idf;
 			lab_cur = lab_next;
 			tag_cur = tag_next;
 		}
 	}
+	
+	printf("the number of doc : %d\n", j);
 	
 	if (j != 0 )
 	{
@@ -549,44 +556,77 @@ int Search(const char w[], int len)
 	return j;
 }
 
+int read_index()
+{
+    FILE* fp;
+    char* s;
+    uint32_t doc_id;
+    int doc_num = 0;
+
+    if ((fp=fopen("index_test", "r")) == NULL)
+    {
+        printf("no index file!\n");
+        return -1;
+    }
+    while (!feof(fp))
+    {
+        fgets(strLine, MAX_CHAR, fp);
+        if (feof(fp))
+            break;
+        strLine[strlen(strLine)-1] = '\0';
+        s = strtok(strLine, " ");
+        if (!s)
+            break ;
+        doc_id = atoi(s);
+        ++doc_num;
+        //printf("%d\n", atoi(s));
+
+        while (true)
+        {
+            s = strtok(NULL, " ");
+            if (!s)
+                break;
+            //printf("%s\n", s);
+            Upload(s, strlen(s), doc_id);
+        }
+		printf("index:%d\n", doc_id);
+    }
+    fclose(fp);
+    return doc_num;
+}
+
+int initword_space()
+{
+	FILE* fp;
+    char* s;
+    int i = 0;
+
+    if ((fp=fopen("word_space", "r")) == NULL)
+    {
+        printf("no word space file!\n");
+        return -1;
+    }
+    while (!feof(fp))
+    {
+        fgets(strLine, MAX_CHAR, fp);
+        if (feof(fp))
+            break;
+        strLine[strlen(strLine)-1] = '\0';
+        strncpy(word_space[i++], strLine, strlen(strLine));
+	}
+	return i;
+}
+
 int main()
 {
-    int i;
-    char w[10] = "zhao";
-    char* q[] = {"zhao", "zh", "zha", "zk", "kdk", "zhao"};
-
-    int result = 2;
-
-    Setup();
-    SKeyGen();
-    Enc(w, strlen(w));
-
-    printf("index: %s\n", w);
-    for (i=0; i<sizeof(q)/sizeof(char*); ++i)
-    {
-        Trap(q[i], strlen(q[i]));
-        result = Match();
-
-        printf("trapdoor word:%s, result: %s\n", q[i], result==1?"OK":"Fail");
-    }
-
-    printf("revoke: %s\n", result==1?"OK":"Fail");
-
-
-/*
-    uint8_t L[32];
-    uint8_t L2[128];
-
-    element_t test_g, test_g2;
-    element_init_G1(test_g, pairing);
-    element_init_G1(test_g2, pairing);
-
-    element_from_hash(test_g, L, 32);
-
-    H(L2, "zha", 3);
-    element_from_hash(test_g2, L2, 32);
-
-    printf("%d\n", element_cmp(test_g, test_g2));
-*/
+	int i;
+	Setup();
+	SKeyGen();
+	i = initword_space();
+    initDataTwTd(word_space, i);
+	read_index();
+	
+	char* w = "ferc";
+	Search(w, strlen(w));
 }
 
