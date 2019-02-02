@@ -1,4 +1,4 @@
-//Xu's schemes
+//Xu's schemes;;;;Tag:the node in last level(index from the first node in last level); 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -8,8 +8,8 @@
 
 #define MAX_CHAR 200
 #define MAX_NODE_NUM 1<<20 
-#define Ld 10 //Tree height
-#define Lw 10
+#define Ld 6 //Tree height
+#define Lw 6
 #define parent(x) ((x-1)/2)
 #define left(x) (x*2+1)
 #define right(x) (x*2+2)
@@ -28,22 +28,20 @@ element_t s;//used in Dec
 element_t ti;//Zr
 element_t di, ei, D, E;//G1
 
-element_t tempG1, tempG12;
+element_t tempG1;
 element_t tempZr, tempZr2; 
-element_t tempGT, tempGT2, tempGT3, tempGT4;
+element_t tempGT, tempGT2;
 
-uint8_t C1[DEFAULT_BYTES];
-element_t C2, C3;//G1
-element_t T1, T2, T3, T4;//G1
+uint8_t K[32];
 
 struct Node
 {
 	uint8_t C1[32];
 	element_t C2;
 	element_t C3;
-}
-Node Td[MAX_NODE_NUM], Tw[MAX_NODE_NUM];
-int node_num = 1<<(L+1)-1
+};
+struct Node Td[MAX_NODE_NUM], Tw[MAX_NODE_NUM];
+int node_num = (1<<(Lw+1))-1;
 
 uint8_t invalid_data[32];
 int invalid_label_Td = -1;
@@ -53,23 +51,22 @@ uint8_t invalid_data_Td[DEFAULT_BYTES];
 int LAB = 0;
 int file_id[1<<20];
 
-
-void Geninvalid_data_Td(uint8_t* data)
+void Geninvalid_data_Td()
 {
-	memset(data, 0, 32);
-	memcpy(data, (uint8_t*)&invalid_label_Td, 4);
+	memset(invalid_data_Td, 0, 32);
+	memcpy(invalid_data_Td, (uint8_t*)&invalid_label_Td, 4);
 }
-void initT(Node T[])
+void initT(struct Node T[])
 {
 	int i;
 	for (i=0; i<node_num; i++)
 	{
-		memset(T[i].C1, 0, sizeof(T[i].C1);
+		memset(T[i].C1, 0, sizeof(T[i].C1));
 		element_init_G1(T[i].C2, pairing);
 		element_init_G1(T[i].C3, pairing);
 	}
 }
-void initDataTwTd(char* w[], int len)
+void initDataTwTd(int len)
 {
 	int i;
 	initT(Tw);
@@ -86,11 +83,17 @@ void initDataTwTd(char* w[], int len)
 	
 	for (i=0; i<len; i++)
 	{
-		int n = H2_w_to_set(buff, w[i], strlen(w[i]));
-		int Lw_node_idx = 1<<Lw-1+buff[rand()%n];
+		//printf("%s\n", w[i]);
+		int n = H2_w_to_set(buff, word_space[i], strlen(word_space[i]));
+		int Lw_node_idx = (1<<Lw)-1+buff[rand()%n];
 		memset(temp, 0, DEFAULT_BYTES);
-		memcpy(temp, (uint8_t*)w[i], strlen(w));	
-		AccessTw(result, Lw_node_idx, invalid_data, temp) 
+		memcpy(temp, (uint8_t*)word_space[i], strlen(word_space[i]));	
+		while (AccessTw(temp, Lw_node_idx, invalid_data, temp)==-1)
+		{
+			Lw_node_idx = (1<<Lw)-1+buff[rand()%n];
+			memset(temp, 0, DEFAULT_BYTES);
+			memcpy(temp, (uint8_t*)word_space[i], strlen(word_space[i]));
+		}
 	}
 }
 
@@ -99,7 +102,7 @@ void print_hex(uint8_t* p, int len)
     int i=0;
     for (i=0; i<len; ++i)
     {
-        printf("%0X", p[i]);
+        printf("%02X", p[i]);
     }
     printf("\n");
 }
@@ -136,19 +139,8 @@ void Setup()
 	element_init_G1(D, pairing);
     element_init_G1(E, pairing);
     element_init_G1(tempG1, pairing);
-    element_init_G1(tempG12, pairing);
     element_init_GT(tempGT, pairing);
     element_init_GT(tempGT2, pairing);
-    element_init_GT(tempGT3, pairing);
-    element_init_GT(tempGT4, pairing);
-
-    element_init_G1(C2, pairing);
-    element_init_G1(C3, pairing);
-
-    element_init_G1(T1, pairing);
-    element_init_G1(T2, pairing);
-    element_init_G1(T3, pairing);
-    element_init_G1(T4, pairing);
 
     element_init_Zr(x1, pairing);
     element_init_Zr(x2, pairing);
@@ -202,7 +194,7 @@ void xor(uint8_t out[], uint8_t x[], uint8_t y[])
 }
 
 //C1, C2, C3
-void Enc(Node T[], int idx, uint8_t m[])
+void Enc(struct Node T[], int idx, uint8_t m[])
 {
     uint8_t* buff;
     uint8_t L[DEFAULT_BYTES];
@@ -212,19 +204,23 @@ void Enc(Node T[], int idx, uint8_t m[])
     element_random(r);
 	
     element_pow_zn(tempG1, g2, r);
-	element_pairing(tempG1, g1, tempG1);
-	n = element_length_in_bytes(tempG1);
-	buff = (uint8_t)malloc(n);
-	element_to_bytes(buff, tempG1);
+	element_pairing(tempGT, g1, tempG1);
+	n = element_length_in_bytes(tempGT);
+	buff = (uint8_t*)malloc(n);
+    if (buff == NULL)
+        return;
+	element_to_bytes(buff, tempGT);
 	H(L, buff, n); 
 	xor(T[idx].C1, L, m);
 	
     element_pow_zn(T[idx].C2, h, r);
     element_pow_zn(T[idx].C3, g, r);
     //print_hex(L, sizeof(L));
+    free(buff);
+    element_clear(r);
 }
 
-void Dec(uint8_t m[], Node T[], int idx)
+void Dec(uint8_t m[], struct Node T[], int idx)
 {
 	element_pairing(tempGT, T[idx].C2, E);
 	element_pairing(tempGT2, T[idx].C3, D);
@@ -243,28 +239,11 @@ void Dec(uint8_t m[], Node T[], int idx)
 	xor(m, degist, T[idx].C1);
 }
 
-void random_gen_L(uint8_t * L, size_t n)
-{
-
-    while(1)
-    {
-        int ret=RAND_status();  /*检测熵值*/
-        if(ret==1)
-        {
-            break;
-        }
-        else
-        {
-            RAND_poll();
-        }
-    }
-
-    RAND_bytes(L, n);
-}
 
 //randomly select leaf node according to w
 //len: the length of w
 //result: leaf node set; return value: number of result;
+//调节移动位数
 int H2_w_to_set(int* result, const char w[], int len)
 {
 	int i;
@@ -278,16 +257,19 @@ int H2_w_to_set(int* result, const char w[], int len)
 	
 	for (i=0; i<DEFAULT_BYTES/2; ++i)
 	{
-		result[i] = (buff[i*2]>>6) * (1<<8) + buff[i*2+1];
+		//result[i] = (buff[i*2]>>6) * (1<<8) + buff[i*2+1];
+		result[i] = buff[i]>>(8-Lw);
 	}
+	//return DEFAULT_BYTES/2;
 	return DEFAULT_BYTES/2;
 }
 
 //from root to leaf
-void Path(int path[], Node T[], int L, int l)
+void Path(int path[], int L, int l)
 {
 	int i;
 	int node_idx=l;
+	int temp; 
 	
 	for (i=0; i<=L; i++)
 	{
@@ -319,11 +301,11 @@ int AccessTw(uint8_t result[], int l, uint8_t w[], uint8_t new_data[])
 	int result_l = -1;
 	
 	int match = 1;
-	Path(path, Tw, Lw, l);
+	Path(path, Lw, l);
 	
 	for (i=0; i<=Lw; i++)
 	{
-		Dec(data, Tw, path[i])
+		Dec(data, Tw, path[i]);
 		if (match == 1 && memcmp(w, data, 16) == 0)
 		{
 			Enc(Tw, path[i], new_data);
@@ -350,11 +332,11 @@ int AccessTd(uint8_t result[], int l, int lab, uint8_t new_data[])
 	int result_l = -1;
 	
 	int match = 1;
-	Path(path, Td, Ld, l);
+	Path(path, Ld, l);
 	
 	for (i=0; i<=Ld; i++)
 	{
-		Dec(data, Td, path[i])
+		Dec(data, Td, path[i]);
 		if (match == 1 && memcmp(data, (uint8_t*)&lab, 4)==0)
 		{
 			Enc(Td, path[i], new_data);
@@ -413,13 +395,13 @@ void Tw_data(uint8_t data[], char w[], int tag0, int tag_k1, int lab0, int lab_k
 
 void Upload(const char w[], int len, int id)
 {
-	int i;
+	int i,l;
 	uint8_t temp[16];
 	int buff[DEFAULT_BYTES];
 	uint8_t new_data[DEFAULT_BYTES];
 	int n = H2_w_to_set(buff, w, len);
 	//int Lw_node_idx = 1<<Lw-1+buff[rand()%n];
-	int base = 1<<Lw-1;
+	int base = (1<<Lw)-1;
 	
 	uint8_t data[DEFAULT_BYTES];
 	memset(temp, 0, 16);
@@ -427,32 +409,44 @@ void Upload(const char w[], int len, int id)
 	//找到对应关键词节点
 	for (i=0; i<n; i++)
 	{
-		int l = AccessTw(data, base+buff[i], temp, invalid_data);
-		if (l==-1)
-			continue
+		l = AccessTw(data, base+buff[i], temp, invalid_data);
+		if (l != -1)
+			break;
 	}
-    uint8_t result[DEFAULT_BYTES];
+	if (l == -1)
+	{
+		printf("no index word..upload\n");
+		return;
+	}
     //w||tag0||tag_k+1||lab0||lab_k+1||ran---->16||4||4||4||4||0
 	int tag0, tag_k1, lab0, lab_k1;
-	Tw_data_field(data, &tag0, &tag_k1, &lab0, &lab_k1);
+	Tw_data_field(data, temp, &tag0, &tag_k1, &lab0, &lab_k1);
 	if (lab0 == lab_k1)
 	{
 		tag_k1 = rand()%(1<<Ld);
 		tag0= tag_k1;
 		lab_k1 = GenLab();
-		lab_0 = lab_k1;
+		lab0 = lab_k1;
 	}
 	int tag_k2 = rand()%(1<<Ld);
 	int lab_k2 = GenLab();
 	
 	Td_data(new_data, lab_k1, tag_k2, lab_k2, id);
-	AccessTd(new_data, 1<<Ld-1+tag_k1, invalid_label_Td, new_data);
+	if (AccessTd(new_data, (1<<Ld)-1+tag_k1, invalid_label_Td, new_data) == -1)
+	{
+		printf("no valid space for Td\n");
+		exit(0);
+	}
 	
 	uint8_t data_Tw[DEFAULT_BYTES];
 	
 	int new_Lw_idx = base + buff[rand()%n];
 	Tw_data(data_Tw, w, tag0, tag_k2, lab0, lab_k2);
-	AccessTw(data, new_Lw_idx, invalid_data, data_Tw);
+	while (AccessTw(data, new_Lw_idx, invalid_data, data_Tw) == -1)//loop insert many times in case there are no invalide_data space for data_Tw
+	{
+		new_Lw_idx = base + buff[rand()%n];
+		Tw_data(data_Tw, w, tag0, tag_k2, lab0, lab_k2);
+	}
 	
 	int rannum = 3;
 	for (i=0; i<rannum; i++)
@@ -465,47 +459,63 @@ void Upload(const char w[], int len, int id)
 int sub_leaf(int tag, int level)
 {
 	int path[Ld+1];
-	Path(path, Td, Ld, 1<<Ld-1+tag);
+	Path(path, Ld, (1<<Ld)-1+tag);
 	int left_node = path[level];
 	int right_node = left_node;
 	
 	while (1)
 	{
-		if (left(left_node) >= 1<<Ld-1)
+		if (left(left_node) >= (1<<Ld)-1)
 			break;
 		left_node = left(left_node);
 		right_node = right(right_node);
 	}
-	return rand()%(right_node-left_node) + (left_node-2<<level-1);
+	int first_node = (1<<Ld)-1;
+	int diff = right_node-left_node;
+	if (diff == 0)
+	{
+		return left_node-first_node;
+	}
+	int ran = rand()%diff;
+	return ran + left_node - first_node;
 }
 
 int Search(const char w[], int len)
 {
 	int i;
+	uint8_t w_buff[16];
+	int l;
 	int buff[DEFAULT_BYTES];
-	uint8_t new_data[DEFAULT_BYTES];
 	int n = H2_w_to_set(buff, w, len);
-	int base = 1<<Lw-1;
+	int base = (1<<Lw)-1;
 	
 	uint8_t data[DEFAULT_BYTES];
+	memset(w_buff, 0, 16);
+	memcpy(w_buff, (uint8_t*)w, strlen(w)); 
+	
 	//找到对应关键词节点
 	for (i=0; i<n; i++)
 	{
-		int l = AccessTw(data, base+buff[i], (uint8_t*)w, invalid_data);
-		if (l==-1)
-			continue
+		l = AccessTw(data, base+buff[i], w_buff, invalid_data);
+		if (l!=-1)
+			break;
+	}
+	if (l==-1)
+	{
+		printf("%s\n", "no this index word");
+		return 0;
 	}
 	int j = 0;
 	
     uint8_t data_Td[DEFAULT_BYTES];
     //w||tag0||tag_k+1||lab0||lab_k+1||ran---->16||4||4||4||4||0
 	int tag0, tag_k1, lab0, lab_k1;
-	Tw_data_field(data, &tag0, &tag_k1, &lab0, &lab_k1);
-	int tag0_c, lab0_c, lab_cur=lab0, tag_cur=tag0;
+	Tw_data_field(data, w_buff, &tag0, &tag_k1, &lab0, &lab_k1);
+	int lab_cur=lab0, tag_cur=tag0;
 	int lab_next, tag_next;
 	if (lab0 == lab_k1)
 	{
-		tab_next = tag0;
+		tag_next = tag0;
 		lab_next = lab0;
 	}
 	else
@@ -513,7 +523,11 @@ int Search(const char w[], int len)
 		while (lab_cur != lab_k1)
 		{
 			int idf;
-			AccessTd(data_Td, 1<<Ld-1+tag_cur, lab_cur, invalid_data_Td);
+			if (AccessTd(data_Td, (1<<Ld)-1+tag_cur, lab_cur, invalid_data_Td)==-1)
+			{
+				printf("no valid space for Td\n");
+				exit(0);
+			}
 			Td_data_field(data_Td, &lab_cur, &tag_next, &lab_next, &idf); 
 			printf("%d\n", idf); 
 			file_id[j++] = idf;
@@ -534,7 +548,12 @@ int Search(const char w[], int len)
 			tag_cur = rand()%(1<<Ld);
 			lab_cur = GenLab();
 			Td_data(data_Td, lab_cur, tag_next, lab_next, file_id[p]);
-			int temp_i = AccessTd(data, 1<<Ld-1+tag_cur, invalid_label_Td, data_Td);
+			int temp_i = AccessTd(data, (1<<Ld)-1+tag_cur, invalid_label_Td, data_Td);
+			if (temp_i == -1)
+			{
+				printf("no valid space for Td\n");
+				exit(0);
+			}
 			
 			lab_next = lab_cur;
 			tag_next = sub_leaf(tag_cur, temp_i);
@@ -545,7 +564,12 @@ int Search(const char w[], int len)
 	
 	int new_Lw_idx = base + buff[rand()%n];
 	Tw_data(data_Tw, w, tag_next, tag_k1, lab_next, lab_k1);
-	AccessTw(data, new_Lw_idx, invalid_data, data_Tw);
+
+	while (AccessTw(data, new_Lw_idx, invalid_data, data_Tw)==-1)
+	{
+		new_Lw_idx = base + buff[rand()%n];
+		Tw_data(data_Tw, w, tag_next, tag_k1, lab_next, lab_k1);
+	}
 	
 	int rannum = 3;
 	for (i=0; i<rannum; i++)
@@ -563,7 +587,7 @@ int read_index()
     uint32_t doc_id;
     int doc_num = 0;
 
-    if ((fp=fopen("index_test", "r")) == NULL)
+    if ((fp=fopen("index_test_1", "r")) == NULL)
     {
         printf("no index file!\n");
         return -1;
@@ -581,12 +605,13 @@ int read_index()
         ++doc_num;
         //printf("%d\n", atoi(s));
 
-        while (true)
+        while (1)
         {
             s = strtok(NULL, " ");
             if (!s)
                 break;
-            //printf("%s\n", s);
+            printf("%s\n", s);
+		
             Upload(s, strlen(s), doc_id);
         }
 		printf("index:%d\n", doc_id);
@@ -598,7 +623,6 @@ int read_index()
 int initword_space()
 {
 	FILE* fp;
-    char* s;
     int i = 0;
 
     if ((fp=fopen("word_space", "r")) == NULL)
@@ -617,16 +641,63 @@ int initword_space()
 	return i;
 }
 
+void testEncDec()
+{
+	uint8_t m[DEFAULT_BYTES];
+	Geninvalid_data_Td();
+	Enc(Tw, 0, invalid_data_Td);
+	Dec(m, Tw, 0);
+	
+	print_hex(m, DEFAULT_BYTES);
+}
+
+void printT(struct Node T[], int level)
+{
+    uint8_t buff[32];
+	for (int i=0; i<(1<<(level+1))-1; i++)
+	{
+        Dec(buff, T, i);
+        print_hex(buff, 32);
+	}
+}
+
 int main()
 {
-	int i;
+	int n;
 	Setup();
+     printf("Setup finish\n");              
 	SKeyGen();
-	i = initword_space();
-    initDataTwTd(word_space, i);
-	read_index();
+    printf("SKeyGen finish\n");
 	
-	char* w = "ferc";
-	Search(w, strlen(w));
+	//initT(Tw);
+	//testEncDec();
+	
+	n = initword_space();
+    printf("initword_space finish\n");
+	printf("%d\n", n);
+
+    initDataTwTd(n);
+    printf("initDataTwTd finish\n");
+    
+    read_index();
+
+    
+    //printT(Tw, Lw);
+    //printf("Td: \n");
+    //printT(Td, Ld);
+	//Dec(buff, Tw, 0);
+	//print_hex(buff, 32);
+/*
+	
+	Dec(buff, Tw, 0);
+    print_hex(buff, 32);
+	*/
+	while(1)
+	{	
+		char input[20];
+		scanf("%s", input);
+		//printf("length of string: %d\n", strlen(input));
+		Search(input, strlen(input));
+	}
 }
 
