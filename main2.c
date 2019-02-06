@@ -14,6 +14,9 @@
 #define left(x) (x*2+1)
 #define right(x) (x*2+2)
 
+float time_use=0;
+struct timeval start, end;
+
 char strLine[MAX_CHAR];
 char word_space[5000][20];
 
@@ -41,7 +44,8 @@ struct Node
 	element_t C3;
 };
 struct Node Td[MAX_NODE_NUM], Tw[MAX_NODE_NUM];
-int node_num = (1<<(Lw+1))-1;
+int node_num_Tw = (1<<(Lw+1))-1;
+int node_num_Td = (1<<(Ld+1))-1;
 
 uint8_t invalid_data[32];
 int invalid_label_Td = -1;
@@ -56,10 +60,10 @@ void Geninvalid_data_Td()
 	memset(invalid_data_Td, 0, 32);
 	memcpy(invalid_data_Td, (uint8_t*)&invalid_label_Td, 4);
 }
-void initT(struct Node T[])
+void initT(struct Node T[], int level)
 {
 	int i;
-	for (i=0; i<node_num; i++)
+	for (i=0; i<(1<<(level+1))-1; i++)
 	{
 		memset(T[i].C1, 0, sizeof(T[i].C1));
 		element_init_G1(T[i].C2, pairing);
@@ -69,13 +73,16 @@ void initT(struct Node T[])
 void initDataTwTd(int len)
 {
 	int i;
-	initT(Tw);
-	initT(Td);
+	initT(Tw, Lw);
+	initT(Td, Ld);
 	
-	for (i=0; i<node_num; i++)
+	for (i=0; i<node_num_Tw; i++)
+	{
+		Enc(Tw, i, invalid_data);
+	}
+	for (i=0; i<node_num_Td; i++)
 	{
 		Enc(Td, i, invalid_data_Td);
-		Enc(Tw, i, invalid_data);
 	}
 	
 	uint8_t temp[DEFAULT_BYTES];
@@ -536,8 +543,6 @@ int Search(const char w[], int len)
 		}
 	}
 	
-	printf("the number of doc : %d\n", j);
-	
 	if (j != 0 )
 	{
 		tag_next = tag_k1;
@@ -663,7 +668,10 @@ void printT(struct Node T[], int level)
 
 int main()
 {
+	int words_num, doc_num;
+	int index_mem_use = 0;
 	int n;
+	char input[50];
 	Setup();
      printf("Setup finish\n");              
 	SKeyGen();
@@ -672,15 +680,29 @@ int main()
 	//initT(Tw);
 	//testEncDec();
 	
-	n = initword_space();
+	gettimeofday(&start, NULL);
+	words_num = initword_space();
     printf("initword_space finish\n");
-	printf("%d\n", n);
 
-    initDataTwTd(n);
+    initDataTwTd(words_num);
     printf("initDataTwTd finish\n");
     
-    read_index();
-
+    doc_num = read_index();
+	printf("dddddd\n");
+	
+	gettimeofday(&end, NULL);
+	time_use = (end.tv_sec-start.tv_sec)*1000000 + (end.tv_usec-start.tv_usec);//微秒
+	printf("document:%d\n", doc_num);
+	printf("words:%d\n", words_num);
+	printf("time: %f\n", time_use/1e6);
+	
+	index_mem_use = (sizeof(struct Node)+32
+					+element_length_in_bytes(Tw[0].C2)+element_length_in_bytes(Tw[0].C3))*node_num_Tw
+					+(sizeof(struct Node)+32
+					+element_length_in_bytes(Td[0].C2)+element_length_in_bytes(Td[0].C3))*node_num_Td;
+					
+	printf("memory: %fM\n", ((double)index_mem_use)/1024/1024);
+    printf("index construction complete...\n");
     
     //printT(Tw, Lw);
     //printf("Td: \n");
@@ -694,10 +716,16 @@ int main()
 	*/
 	while(1)
 	{	
-		char input[20];
-		scanf("%s", input);
-		//printf("length of string: %d\n", strlen(input));
-		Search(input, strlen(input));
+		fgets(input, 50, stdin);
+        input[strlen(input)-1] = '\0';
+		gettimeofday(&start, NULL);
+		
+		n = Search(input, strlen(input));
+		
+		gettimeofday(&end, NULL);
+		time_use = (end.tv_sec-start.tv_sec)*1000000 + (end.tv_usec-start.tv_usec);//微秒
+		printf("time_used:%f, doc_num:%d\n", time_use/1e6, n);
+		
 	}
 }
 

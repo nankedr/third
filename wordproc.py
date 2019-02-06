@@ -13,4 +13,4 @@ for word in words:
 		print(word)
 
 with open('word_space', 'w') as f:
-	f.write('\n'.join(words.keys()))
+	f.write('\n'.join(words.keys())+'\n')
