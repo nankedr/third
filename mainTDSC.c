@@ -7,6 +7,8 @@
 //每行最多10个词
 #define MAX_FILE_NUM 15000
 #define MAX_WORDS_NUM 15
+#define MAX_CHAR 500
+char strLine[MAX_CHAR];
 
 pairing_t pairing;
 element_t g;
@@ -38,10 +40,10 @@ int words_num[MAX_FILE_NUM];
 void construct_index(char* w, int len, int doc_id)
 {
 	int i = words_num[doc_id];
-	element_init_G1(f_index[doc_id][i].C1);
-	element_init_G1(f_index[doc_id][i].C2);
-	element_init_G1(f_index[doc_id][i].C3);
-	element_init_G1(f_index[doc_id][i].C4);
+	element_init_G1(f_index[doc_id][i].C1, pairing);
+	element_init_G1(f_index[doc_id][i].C2, pairing);
+	element_init_G1(f_index[doc_id][i].C3, pairing);
+	element_init_G1(f_index[doc_id][i].C4, pairing);
 	
 	Enc(w, len, doc_id, i);
 	words_num[doc_id] += 1;
@@ -53,7 +55,6 @@ int read_index()
     char* s;
     uint32_t doc_id;
     int doc_num = 0;
-	char strLine[20];
 
     if ((fp=fopen("index_test_1", "r")) == NULL)
     {
@@ -62,7 +63,7 @@ int read_index()
     }
     while (!feof(fp))
     {
-        fgets(strLine, 20, fp);
+        fgets(strLine, MAX_CHAR, fp);
         if (feof(fp))
             break;
         strLine[strlen(strLine)-1] = '\0';
@@ -317,9 +318,9 @@ int main()
 	printf("document:%d\n", doc_num);
 	printf("time: %f\n", time_use/1e6);
 	
-	index_mem_use = (sizeof(struct Cipher) + element_length_in_bytes(f_index[0].C1)
-					+ element_length_in_bytes(f_index[0].C2)+ element_length_in_bytes(f_index[0].C3)
-					+ element_length_in_bytes(f_index[0].C4))*doc_num
+	index_mem_use = (sizeof(struct Cipher) + element_length_in_bytes(f_index[0][0].C1)
+					+ element_length_in_bytes(f_index[0][0].C2)+ element_length_in_bytes(f_index[0][0].C3)
+					+ element_length_in_bytes(f_index[0][0].C4))*doc_num
 					+ 4* doc_num;
 					
 	printf("memory: %fM\n", ((double)index_mem_use)/1024/1024);
@@ -340,7 +341,7 @@ int main()
 			{
 				if (Match(i, j)==1){
 					n++;
-					print("%d\n", i);
+					printf("%d\n", i);
 					break;
 				}
 			}
