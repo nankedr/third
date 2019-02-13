@@ -90,7 +90,7 @@ void initDataTwTd(int len)
 	
 	for (i=0; i<len; i++)
 	{
-		//printf("%s\n", w[i]);
+		printf("%s\n", w[i]);
 		int n = H2_w_to_set(buff, word_space[i], strlen(word_space[i]));
 		int Lw_node_idx = (1<<Lw)-1+buff[rand()%n];
 		memset(temp, 0, DEFAULT_BYTES);
