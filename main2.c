@@ -592,7 +592,7 @@ int read_index()
     uint32_t doc_id;
     int doc_num = 0;
 
-    if ((fp=fopen("index_test_1", "r")) == NULL)
+    if ((fp=fopen("index_test", "r")) == NULL)
     {
         printf("no index file!\n");
         return -1;
@@ -630,7 +630,7 @@ int initword_space()
 	FILE* fp;
     int i = 0;
 
-    if ((fp=fopen("word_space", "r")) == NULL)
+    if ((fp=fopen("word_space_test", "r")) == NULL)
     {
         printf("no word space file!\n");
         return -1;
