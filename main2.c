@@ -629,6 +629,16 @@ int read_index(int n)
     return doc_num;
 }
 
+int exist_in_wordspace(const char* s, int n)
+{
+    for (int i=0; i<n; i++)
+    {
+        if (strcmp(word_space[i], s)==0)
+            return 1;
+    }
+    return 0;
+}
+
 int initword_space(int n)
 {
 	// FILE* fp;
@@ -651,7 +661,6 @@ int initword_space(int n)
     FILE* fp;
     char* s;
     uint32_t doc_id;
-    int doc_num = 0;
     int i=0;
 
     if ((fp=fopen("index_test", "r")) == NULL)
@@ -669,7 +678,6 @@ int initword_space(int n)
         if (!s)
             break ;
         doc_id = atoi(s);
-        ++doc_num;
         //printf("%d\n", atoi(s));
 
         while (1)
@@ -677,11 +685,13 @@ int initword_space(int n)
             s = strtok(NULL, " ");
             if (!s)
                 break;
-            strncpy(word_space[i++], s, strlen(s))
+            
+            if (!exist_in_wordspace(s, i))
+                strncpy(word_space[i++], s, strlen(s));
         }
     }
     fclose(fp);
-    return doc_num;
+    return i;
 }
 
 void testEncDec()
