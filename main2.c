@@ -8,8 +8,8 @@
 
 #define MAX_CHAR 200
 #define MAX_NODE_NUM 1<<20 
-#define Ld 6 //Tree height
-#define Lw 6
+#define Ld 15 //Tree height
+#define Lw 13
 #define parent(x) ((x-1)/2)
 #define left(x) (x*2+1)
 #define right(x) (x*2+2)
@@ -264,10 +264,9 @@ int H2_w_to_set(int* result, const char w[], int len)
 	
 	for (i=0; i<DEFAULT_BYTES/2; ++i)
 	{
-		//result[i] = (buff[i*2]>>6) * (1<<8) + buff[i*2+1];
-		result[i] = buff[i]>>(8-Lw);
+		result[i] = (buff[i*2]>>6) * (1<<8) + buff[i*2+1];
+		//result[i] = buff[i]>>(8-Lw);
 	}
-	//return DEFAULT_BYTES/2;
 	return DEFAULT_BYTES/2;
 }
 
