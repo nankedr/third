@@ -8,8 +8,8 @@
 
 #define MAX_CHAR 200
 #define MAX_NODE_NUM 1<<20 
-#define Ld 15 //Tree height
-#define Lw 13
+#define Ld 14 //Tree height
+#define Lw 12
 #define parent(x) ((x-1)/2)
 #define left(x) (x*2+1)
 #define right(x) (x*2+2)
@@ -19,6 +19,8 @@ struct timeval start, end;
 
 char strLine[MAX_CHAR];
 char word_space[5000][20];
+
+int input_lines_num = 50;
 
 //tag 4bytes; lab 4byte; w 20bytes; ran 0bytes;
 pairing_t pairing;
@@ -78,11 +80,8 @@ void initDataTwTd(int len)
 	
 	for (i=0; i<node_num_Tw; i++)
 	{
+	    printf("%d\n", i);
 		Enc(Tw, i, invalid_data);
-	}
-	for (i=0; i<node_num_Td; i++)
-	{
-		Enc(Td, i, invalid_data_Td);
 	}
 	
 	uint8_t temp[DEFAULT_BYTES];
@@ -98,9 +97,15 @@ void initDataTwTd(int len)
 		while (AccessTw(temp, Lw_node_idx, invalid_data, temp)==-1)
 		{
 			Lw_node_idx = (1<<Lw)-1+buff[rand()%n];
+			//printf("%d\n", Lw_node_idx);
 			memset(temp, 0, DEFAULT_BYTES);
 			memcpy(temp, (uint8_t*)word_space[i], strlen(word_space[i]));
 		}
+	}
+	for (i=0; i<node_num_Td; i++)
+	{
+	    printf("%d\n", i);
+		Enc(Td, i, invalid_data_Td);
 	}
 }
 
@@ -264,7 +269,7 @@ int H2_w_to_set(int* result, const char w[], int len)
 	
 	for (i=0; i<DEFAULT_BYTES/2; ++i)
 	{
-		result[i] = (buff[i*2]>>6) * (1<<8) + buff[i*2+1];
+		result[i] = (buff[i*2]>>(16-Lw)) * (1<<8) + buff[i*2+1];
 		//result[i] = buff[i]>>(8-Lw);
 	}
 	return DEFAULT_BYTES/2;
@@ -584,7 +589,7 @@ int Search(const char w[], int len)
 	return j;
 }
 
-int read_index()
+int read_index(int n)
 {
     FILE* fp;
     char* s;
@@ -596,7 +601,7 @@ int read_index()
         printf("no index file!\n");
         return -1;
     }
-    while (!feof(fp))
+    while ((n--) && !feof(fp))
     {
         fgets(strLine, MAX_CHAR, fp);
         if (feof(fp))
@@ -624,25 +629,59 @@ int read_index()
     return doc_num;
 }
 
-int initword_space()
+int initword_space(int n)
 {
-	FILE* fp;
-    int i = 0;
+	// FILE* fp;
+    // int i = 0;
 
-    if ((fp=fopen("word_space_test", "r")) == NULL)
+    // if ((fp=fopen("word_space_test", "r")) == NULL)
+    // {
+        // printf("no word space file!\n");
+        // return -1;
+    // }
+    // while (!feof(fp))
+    // {
+        // fgets(strLine, MAX_CHAR, fp);
+        // if (feof(fp))
+            // break;
+        // strLine[strlen(strLine)-1] = '\0';
+        // strncpy(word_space[i++], strLine, strlen(strLine));
+	// }
+	// return i;
+    FILE* fp;
+    char* s;
+    uint32_t doc_id;
+    int doc_num = 0;
+    int i=0;
+
+    if ((fp=fopen("index_test", "r")) == NULL)
     {
-        printf("no word space file!\n");
+        printf("no index file!\n");
         return -1;
     }
-    while (!feof(fp))
+    while ((n--) && !feof(fp))
     {
         fgets(strLine, MAX_CHAR, fp);
         if (feof(fp))
             break;
         strLine[strlen(strLine)-1] = '\0';
-        strncpy(word_space[i++], strLine, strlen(strLine));
-	}
-	return i;
+        s = strtok(strLine, " ");
+        if (!s)
+            break ;
+        doc_id = atoi(s);
+        ++doc_num;
+        //printf("%d\n", atoi(s));
+
+        while (1)
+        {
+            s = strtok(NULL, " ");
+            if (!s)
+                break;
+            strncpy(word_space[i++], s, strlen(s))
+        }
+    }
+    fclose(fp);
+    return doc_num;
 }
 
 void testEncDec()
@@ -665,28 +704,37 @@ void printT(struct Node T[], int level)
 	}
 }
 
-int main()
+int main(int argc, char* argv[])
 {
 	int words_num, doc_num;
 	int index_mem_use = 0;
 	int n;
 	char input[50];
 	Setup();
-     printf("Setup finish\n");              
+    printf("Setup finish\n");              
 	SKeyGen();
     printf("SKeyGen finish\n");
 	
 	//initT(Tw);
 	//testEncDec();
+    
+    if (argc == 1){
+        input_lines_num = 50;
+    }
+    else{
+        input_lines_num = atoi(argv[1]);
+        if (input_lines_num == 0)
+            input_lines_num = 50;
+    }
 	
 	gettimeofday(&start, NULL);
-	words_num = initword_space();
+	words_num = initword_space(input_lines_num);
     printf("initword_space finish\n");
 
     initDataTwTd(words_num);
     printf("initDataTwTd finish\n");
     
-    doc_num = read_index();
+    doc_num = read_index(input_lines_num);
 	printf("dddddd\n");
 	
 	gettimeofday(&end, NULL);

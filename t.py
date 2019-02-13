@@ -1,3 +1,5 @@
+import math
+
 def max_words_num_per_line():
     max_num = 0
     i = 0
@@ -18,8 +20,10 @@ def forward_to_inverted():
             for word in templist[1:]:
                 inverted_index.setdefault(word, 0)
                 inverted_index[word] += 1
-    print('number of index: {}'.format(sum(inverted_index.values())))
-    print('number of words: {}'.format(len(inverted_index.keys())))
+    num_index = sum(inverted_index.values())
+    num_words = len(inverted_index.keys())
+    print('number of index: {}, log_2_:{}'.format(num_index, math.log(3*num_index, 2)))
+    print('number of words: {}, log_2_:{}'.format(num_words, math.log(3*num_words, 2)))
     
 if __name__ == '__main__':
     forward_to_inverted()
