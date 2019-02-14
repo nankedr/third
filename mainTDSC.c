@@ -9,7 +9,7 @@
 #define MAX_WORDS_NUM 15
 #define MAX_CHAR 500
 char strLine[MAX_CHAR];
-
+int input_lines_num = 50;
 pairing_t pairing;
 element_t g;
 element_t g1, g2, EK;//G1
@@ -49,7 +49,7 @@ void construct_index(char* w, int len, int doc_id)
 	words_num[doc_id] += 1;
 }
 
-int read_index()
+int read_index(int n)
 {
     FILE* fp;
     char* s;
@@ -61,7 +61,7 @@ int read_index()
         printf("no index file!\n");
         return -1;
     }
-    while (!feof(fp))
+    while ((n--) && !feof(fp))
     {
         fgets(strLine, MAX_CHAR, fp);
         if (feof(fp))
@@ -275,7 +275,7 @@ int RevCheck()
     }
 }
 
-int main()
+int main(int argc, char* argv[])
 {
     // int i;
     // char w[10] = "zhao";
@@ -308,10 +308,19 @@ int main()
     printf("Setup finish\n");              
 	SKeyGen();
     printf("SKeyGen finish\n");
+    
+    if (argc == 1){
+        input_lines_num = 50;
+    }
+    else{
+        input_lines_num = atoi(argv[1]);
+        if (input_lines_num == 0)
+            input_lines_num = 50;
+    }
 	
 	gettimeofday(&start, NULL);
     
-    doc_num = read_index();
+    doc_num = read_index(input_lines_num);
 	
 	gettimeofday(&end, NULL);
 	time_use = (end.tv_sec-start.tv_sec)*1000000 + (end.tv_usec-start.tv_usec);//微秒
