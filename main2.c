@@ -8,8 +8,8 @@
 
 #define MAX_CHAR 200
 #define MAX_NODE_NUM 1<<20 
-#define Ld 14 //Tree height
-#define Lw 12
+#define Ld 12 //Tree height
+#define Lw 10
 #define parent(x) ((x-1)/2)
 #define left(x) (x*2+1)
 #define right(x) (x*2+2)

@@ -11,20 +11,31 @@ def max_words_num_per_line():
                 max_num = cur_num
     print(max_num, i)
 
-def forward_to_inverted():
+def forward_to_inverted(input_lines_num = 5000):
     inverted_index = dict()
     with open('index_test', 'r') as f:
         for line in f:
+            if input_lines_num == 0:
+                break
+            input_lines_num -= 1
+            
             templist = line.strip('\n').split()
             doc_id = templist[0]
             for word in templist[1:]:
                 inverted_index.setdefault(word, 0)
                 inverted_index[word] += 1
+                
+    kvlist = sorted(inverted_index.items(), key=lambda d:d[1])
+    for kv in kvlist:
+        print(kv)      
+        
     num_index = sum(inverted_index.values())
     num_words = len(inverted_index.keys())
     print('number of index: {}, log_2_:{}'.format(num_index, math.log(3*num_index, 2)))
     print('number of words: {}, log_2_:{}'.format(num_words, math.log(3*num_words, 2)))
     
+    
+    
 if __name__ == '__main__':
-    forward_to_inverted()
+    forward_to_inverted(1000)
             
