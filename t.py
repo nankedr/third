@@ -37,5 +37,5 @@ def forward_to_inverted(input_lines_num = 5000):
     
     
 if __name__ == '__main__':
-    forward_to_inverted(1000)
+    forward_to_inverted(50)
             
