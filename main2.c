@@ -5,6 +5,7 @@
 #include <pbc.h>
 #include <openssl/rand.h>
 #include "hash.h"
+#include "globals"
 
 #define MAX_CHAR 200
 #define MAX_NODE_NUM 1<<20 
@@ -13,6 +14,8 @@
 #define parent(x) ((x-1)/2)
 #define left(x) (x*2+1)
 #define right(x) (x*2+2)
+
+int read_index_plain(int n);
 
 float time_use=0;
 struct timeval start, end;
@@ -39,12 +42,6 @@ element_t tempGT, tempGT2;
 
 uint8_t K[32];
 
-struct Node
-{
-	uint8_t C1[32];
-	element_t C2;
-	element_t C3;
-};
 struct Node Td[MAX_NODE_NUM], Tw[MAX_NODE_NUM];
 int node_num_Tw = (1<<(Lw+1))-1;
 int node_num_Td = (1<<(Ld+1))-1;
