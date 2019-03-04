@@ -734,15 +734,16 @@ int main(int argc, char* argv[])
             input_lines_num = 50;
     }
 	
-	gettimeofday(&start, NULL);
+	//gettimeofday(&start, NULL);
 	words_num = initword_space(input_lines_num);
     printf("initword_space finish\n");
 
     initDataTwTd(words_num);
     printf("initDataTwTd finish\n");
+    gettimeofday(&start, NULL);
     
     doc_num = read_index(input_lines_num);
-	printf("dddddd\n");
+	printf("read_index finish\n");
 	
 	gettimeofday(&end, NULL);
 	time_use = (end.tv_sec-start.tv_sec)*1000000 + (end.tv_usec-start.tv_usec);//微秒
