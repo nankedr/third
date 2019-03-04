@@ -1,4 +1,5 @@
 import math
+import sys
 
 def max_words_num_per_line():
     max_num = 0
@@ -12,12 +13,13 @@ def max_words_num_per_line():
     print(max_num, i)
 
 def forward_to_inverted(input_lines_num = 5000):
+    count = input_lines_num
     inverted_index = dict()
     with open('index_test', 'r') as f:
         for line in f:
-            if input_lines_num == 0:
+            if count == 0:
                 break
-            input_lines_num -= 1
+            count -= 1
             
             templist = line.strip('\n').split()
             doc_id = templist[0]
@@ -31,11 +33,13 @@ def forward_to_inverted(input_lines_num = 5000):
         
     num_index = sum(inverted_index.values())
     num_words = len(inverted_index.keys())
+    print('number of file: {}'.format(input_lines_num))
     print('number of index: {}, log_2_:{}'.format(num_index, math.log(3*num_index, 2)))
     print('number of words: {}, log_2_:{}'.format(num_words, math.log(3*num_words, 2)))
     
-    
-    
 if __name__ == '__main__':
-    forward_to_inverted(50)
+    file_num = 50
+    if len(sys.argv) != 1:
+        file_num = int(sys.argv[1])
+    forward_to_inverted(file_num)
             
