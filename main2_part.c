@@ -5,8 +5,21 @@
 #include "globals.h"
 
 extern struct Node Tw[], Td[];
-void Enc(struct Node T[], int idx, uint8_t m[]);
 extern int node_num_Tw, node_num_Td;
+extern int invalid_label_Td;
+extern uint8_t invalid_data[];
+extern char strLine[];
+extern char word_space[5000][20];
+extern uint8_t invalid_data_Td[];
+
+void initT(struct Node T[], int level);
+void Enc(struct Node T[], int idx, uint8_t m[]);
+int GenLab();
+int H2_w_to_set(int* result, const char w[], int len);
+void Path(int path[], int L, int l);
+void Tw_data_field(uint8_t data[], char w[], int* tag0, int* tag_k1, int* lab0, int* lab_k1);
+void Tw_data(uint8_t data[], char w[], int tag0, int tag_k1, int lab0, int lab_k1);
+void Td_data(uint8_t data[], int lab_k1, int tag_k2, int lab_k2, int idf);
 
 void Dec_plain(uint8_t m[], struct Node T[], int idx)
 {	
@@ -125,25 +138,20 @@ void Upload_plain(const char w[], int len, int id)
 		new_Lw_idx = base + buff[rand()%n];
 		Tw_data(data_Tw, w, tag0, tag_k2, lab0, lab_k2);
 	}
-	
-	int rannum = 3;
-	for (i=0; i<rannum; i++)
-	{
-		AccessTw_plain(data, base+rand()%(1<<Lw), invalid_data, invalid_data);
-	}
 }
 
 void Enc_All_plain()
 {
+    int i;
     for (i=0; i<node_num_Tw; i++)
 	{
-	    printf("%d\n", i);
+	    printf("Tw Enc %d\n", i);
 		Enc(Tw, i, Tw[i].C1);
 	}
     
     for (i=0; i<node_num_Td; i++)
 	{
-	    printf("%d\n", i);
+	    printf("Td Enc %d\n", i);
 		Enc(Td, i, Td[i].C1);
 	}
 }
@@ -186,6 +194,38 @@ int read_index_plain(int n)
     }
     fclose(fp);
     
-    Enc_All_plain()
+    Enc_All_plain();
     return doc_num;
+}
+
+void initDataTwTd_plain(int len)
+{
+	int i;
+	initT(Tw, Lw);
+	initT(Td, Ld);
+	
+	for (i=0; i<node_num_Td; i++)
+	{
+	    //printf("%d\n", i);
+		Enc_plain(Td, i, invalid_data_Td);
+	}
+	
+	uint8_t temp[DEFAULT_BYTES];
+	int buff[DEFAULT_BYTES];
+	
+	for (i=0; i<len; i++)
+	{
+		//printf("%s\n", word_space[i]);
+		int n = H2_w_to_set(buff, word_space[i], strlen(word_space[i]));
+		int Lw_node_idx = (1<<Lw)-1+buff[rand()%n];
+		memset(temp, 0, DEFAULT_BYTES);
+		memcpy(temp, (uint8_t*)word_space[i], strlen(word_space[i]));	
+		while (AccessTw_plain(temp, Lw_node_idx, invalid_data, temp)==-1)
+		{
+			Lw_node_idx = (1<<Lw)-1+buff[rand()%n];
+			//printf("%d\n", Lw_node_idx);
+			memset(temp, 0, DEFAULT_BYTES);
+			memcpy(temp, (uint8_t*)word_space[i], strlen(word_space[i]));
+		}
+	}
 }

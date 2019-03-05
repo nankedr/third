@@ -5,17 +5,15 @@
 #include <pbc.h>
 #include <openssl/rand.h>
 #include "hash.h"
-#include "globals"
+#include "globals.h"
 
-#define MAX_CHAR 200
-#define MAX_NODE_NUM 1<<20 
-#define Ld 12 //Tree height
-#define Lw 10
+
 #define parent(x) ((x-1)/2)
 #define left(x) (x*2+1)
 #define right(x) (x*2+2)
 
 int read_index_plain(int n);
+void initDataTwTd_plain(int len);
 
 float time_use=0;
 struct timeval start, end;
@@ -738,11 +736,11 @@ int main(int argc, char* argv[])
 	words_num = initword_space(input_lines_num);
     printf("initword_space finish\n");
 
-    initDataTwTd(words_num);
+    initDataTwTd_plain(words_num);
     printf("initDataTwTd finish\n");
     gettimeofday(&start, NULL);
     
-    doc_num = read_index(input_lines_num);
+    doc_num = read_index_plain(input_lines_num);
 	printf("read_index finish\n");
 	
 	gettimeofday(&end, NULL);

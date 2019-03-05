@@ -9,4 +9,9 @@ struct Node
 	element_t C3;
 };
 
+#define Ld 9 //Tree height
+#define Lw 8
+#define MAX_CHAR 200
+#define MAX_NODE_NUM 1<<20 
+
 #endif
