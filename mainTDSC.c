@@ -303,6 +303,7 @@ int main(int argc, char* argv[])
 	int index_mem_use = 0;
 	int n = 0;
 	char input[50];
+	int wordnum = 0;
 	
 	Setup();
     printf("Setup finish\n");              
@@ -326,10 +327,13 @@ int main(int argc, char* argv[])
 	time_use = (end.tv_sec-start.tv_sec)*1000000 + (end.tv_usec-start.tv_usec);//微秒
 	printf("document:%d\n", doc_num);
 	printf("time: %f\n", time_use/1e6);
+
+	for (int i=0; i<doc_num; i++)
+		wordnum += words_num[i];
 	
 	index_mem_use = (sizeof(struct Cipher) + element_length_in_bytes(f_index[0][0].C1)
 					+ element_length_in_bytes(f_index[0][0].C2)+ element_length_in_bytes(f_index[0][0].C3)
-					+ element_length_in_bytes(f_index[0][0].C4))*doc_num
+					+ element_length_in_bytes(f_index[0][0].C4))*wordnum
 					+ 4* doc_num;
 					
 	printf("memory: %fM\n", ((double)index_mem_use)/1024/1024);

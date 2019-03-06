@@ -115,12 +115,22 @@ void Upload_plain(const char w[], int len, int id)
 	if (lab0 == lab_k1)
 	{
 		tag_k1 = rand()%(1<<Ld);
+		while (AccessTd_plain(new_data, (1<<Ld)-1+tag_k1, invalid_label_Td, invalid_data_Td) == -1)
+		{
+			tag_k1 = rand()%(1<<Ld);
+		}
+
 		tag0= tag_k1;
 		lab_k1 = GenLab();
 		lab0 = lab_k1;
 	}
 	int tag_k2 = rand()%(1<<Ld);
 	int lab_k2 = GenLab();
+		while (AccessTd_plain(new_data, (1<<Ld)-1+tag_k2, invalid_label_Td, invalid_data_Td) == -1)
+		{
+			tag_k2 = rand()%(1<<Ld);
+			printf("repeat tag_k2\n");
+		}
 	
 	Td_data(new_data, lab_k1, tag_k2, lab_k2, id);
 	if (AccessTd_plain(new_data, (1<<Ld)-1+tag_k1, invalid_label_Td, new_data) == -1)
@@ -128,9 +138,14 @@ void Upload_plain(const char w[], int len, int id)
 		printf("no valid space for Td\n");
 		exit(0);
 	}
-	
+	/*
+	while (AccessTd_plain(new_data, (1<<Ld)-1+tag_k1, invalid_label_Td, new_data) == -1)
+	{
+		tag_k2 = rand()%(1<<Ld);
+		Td_data(new_data, lab_k1, tag_k2, lab_k2, id);
+	}
+	*/
 	uint8_t data_Tw[DEFAULT_BYTES];
-	
 	int new_Lw_idx = base + buff[rand()%n];
 	Tw_data(data_Tw, w, tag0, tag_k2, lab0, lab_k2);
 	while (AccessTw_plain(data, new_Lw_idx, invalid_data, data_Tw) == -1)//loop insert many times in case there are no invalide_data space for data_Tw
