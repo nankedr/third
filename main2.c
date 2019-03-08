@@ -768,10 +768,11 @@ int main(int argc, char* argv[])
     print_hex(buff, 32);
 	*/
 	int upload_id = 1000000;
-    
+    float time_comm = 0;
 	char** search_words = {"deal", "list", "free", "weekend", "gas", "report", "caiso"};
     int search_words_num = 7;
     int i;
+    
     for (i=0; i<search_words_num; i++)
     {
         gettimeofday(&start, NULL);
@@ -780,7 +781,8 @@ int main(int argc, char* argv[])
         
         gettimeofday(&end, NULL);
         time_use = (end.tv_sec-start.tv_sec)*1000000 + (end.tv_usec-start.tv_usec);//微秒
-        printf("search time_used:%f, doc_num:%d\n", time_use/1e6, n);
+        time_comm = 17 * (2 *288 * Lw+256+256*Lw) + 2* n *(288 * 2*Ld + 256+256*Ld);//秒
+        printf("search time_used:%f, doc_num:%d, time_comm:%f, time_total:%f\n", time_use/1e6, n, time_comm, time_use+time_comm);
     }
     for (i=0; i<search_words_num; i++)
     {
