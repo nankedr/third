@@ -767,18 +767,46 @@ int main(int argc, char* argv[])
 	Dec(buff, Tw, 0);
     print_hex(buff, 32);
 	*/
+	int upload_id = 1000000;
+	char** search_words = {"deal", "list", "free", "weekend", "gas", "report", "caiso"};
+	while(1)
+	{
 	while(1)
 	{	
 		fgets(input, 50, stdin);
         input[strlen(input)-1] = '\0';
+		if (strcmp(input, "_switch")==0)
+		{
+			printf("upload starting\n");
+			break;
+		}
 		gettimeofday(&start, NULL);
 		
 		n = Search(input, strlen(input));
 		
 		gettimeofday(&end, NULL);
 		time_use = (end.tv_sec-start.tv_sec)*1000000 + (end.tv_usec-start.tv_usec);//微秒
-		printf("time_used:%f, doc_num:%d\n", time_use/1e6, n);
+		printf("search time_used:%f, doc_num:%d\n", time_use/1e6, n);
 		
+	}
+	while(1)
+	{	
+		fgets(input, 50, stdin);
+        input[strlen(input)-1] = '\0';
+		if (strcmp(input, "_switch")==0)
+		{
+			printf("search starting\n");
+			break;
+		}
+		gettimeofday(&start, NULL);
+		
+		Upload(input, strlen(input), upload_id++);
+		
+		gettimeofday(&end, NULL);
+		time_use = (end.tv_sec-start.tv_sec)*1000000 + (end.tv_usec-start.tv_usec);//微秒
+		printf("upload time_used:%f\n", time_use/1e6);
+		
+	}
 	}
 }
 
